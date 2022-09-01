@@ -1,13 +1,11 @@
+import time
 import numpy as np
 import cv2
 import pytesseract
-from time import sleep
+from time import time
 
-
-def sanitize_img(path: str) -> np.ndarray:
+def sanitize_img(img) -> np.ndarray:
     """Convert to B&W, remove dim pixels and fill holes"""
-    # Lee la imagen
-    img = cv2.imread(path)
     # Aplica grayscale y elimina los pixeles con brillos bajos
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_gray = cv2.threshold(img_gray, 175, 255, cv2.THRESH_TOZERO)[1]
@@ -33,9 +31,22 @@ def read_txt_from_img(sanitized_img) -> str:
     return text
 
 
-def listening_mode():
+def score_listening_mode() -> str:
+    """Enter a listening state to wait for the score to show on the Pinball screen."""
+    video_capture = cv2.VideoCapture(0)
+    frame_rate = 2
+    prev = 0
+
     while True:
-        sleep(1)
+        time_elapsed = time.time() - prev
+        ret, frame = video_capture.read()
+
+        if time_elapsed > 1/frame_rate:
+            sanitized_img = sanitize_img(frame)
+            text = read_txt_from_img(sanitized_img)
+
+    video_caplture.release()
+    cv2.destroyAllWindows()
 
 
 
