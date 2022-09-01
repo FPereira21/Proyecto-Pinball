@@ -3,10 +3,12 @@ from DB.Db import mdbconn
 import numpy as np
 import cv2
 import time
+from TextRec.OCR import score_listening_mode
 
 
 def face_authentication(img_enc) -> tuple:
-    """Authenticate given image (ndarray) with the database and return name of the authenticated person.
+    """Authenticate faces from the given image (ndarray) with the database and return name and distance
+    of the authenticated person.
     Return None if no match found.
     """
     # Genera encoding para la foto recibida
@@ -14,17 +16,17 @@ def face_authentication(img_enc) -> tuple:
     # Abre la conexion con la base de datos
     conn = mdbconn()
     cur = conn.cursor()
-    sql_query = "SELECT EncodingPath FROM Players"
+    sql_query = "SELECT Id, EncodingPath FROM Players"
     cur.execute(sql_query)
     # Lista de encodings del tipo nparray
     encodings_list = []
     # Lista de paths a los encodings para sacar el nombre
     encodings_path_list = []
     # Saca todo EncodingPath de la base y lo carga con numpy en una lista de encodings
-    for encoding_path in cur:
+    for player_id, encoding_path in cur:
         # encoding_path[0] porque sale como tuple
-        encodings_path_list.append(encoding_path[0])
-        encoding = np.load(encoding_path[0])
+        encodings_path_list.append([player_id, encoding_path])
+        encoding = np.load(encoding_path)
         encodings_list.append(encoding)
     # Selecciona el encoding con la minima distancia
     face_distances = face_recognition.face_distance(encodings_list, img_enc)
@@ -32,15 +34,16 @@ def face_authentication(img_enc) -> tuple:
     # Si la distancia es menor a 0.6 retorna el nombre
     # Si es mayor retorna None
     if face_distances[best_match_index] > 0.6:
-        return "", 0
+        return "", -1
     else:
         # El indice de la distancia corresponde al indice de su path, con el cual se saca el nombre
-        match = encodings_path_list[best_match_index]
-        split_path = match.rsplit("/")
+        match_path = encodings_path_list[1][best_match_index]
+        split_path = match_path.rsplit("/")
         match_name_location = split_path.index("FaceEncodings") + 1
         match_name = split_path[match_name_location]
         print(face_distances[best_match_index])
-        return match_name, face_distances[best_match_index]
+        # Retorna el nombre del match y su id
+        return match_name, encodings_path_list[0][best_match_index]
 
 
 def main():
@@ -60,10 +63,11 @@ def main():
             if face_locations:
                 # Autentica la imagen con las referencias
                 image_encoding = face_recognition.face_encodings(rgb_small_frame, face_locations)[0]
-                match, distance = face_authentication(image_encoding)
+                match, player_id = face_authentication(image_encoding)
                 if match != "":
+                    score_listening_mode(player_id)
                     print(match)
-                    print(distance)
+                    print(player_id)
         cv2.imshow("Video", small_frame)
 
         c = cv2.waitKey(1)

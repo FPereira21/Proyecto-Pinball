@@ -1,8 +1,12 @@
-import time
 import numpy as np
 import cv2
 import pytesseract
 from time import time
+from DB.ScoreAppend import add_score
+from urllib.request import Request, urlopen
+from os import environ
+from slack_sdk import WebClient
+
 
 def sanitize_img(img) -> np.ndarray:
     """Convert to B&W, remove dim pixels and fill holes"""
@@ -31,29 +35,45 @@ def read_txt_from_img(sanitized_img) -> str:
     return text
 
 
-def score_listening_mode() -> str:
-    """Enter a listening state to wait for the score to show on the Pinball screen."""
+def score_listening_mode(playerid: str) -> str:
+    """Enter a listening state to wait for the score to show on the Pinball screen.
+    Uploads the score to the given player id
+    """
     video_capture = cv2.VideoCapture(0)
     frame_rate = 2
     prev = 0
 
     while True:
-        time_elapsed = time.time() - prev
+        time_elapsed = time() - prev
         ret, frame = video_capture.read()
 
-        if time_elapsed > 1/frame_rate:
+        if time_elapsed > 1 / frame_rate:
             sanitized_img = sanitize_img(frame)
             text = read_txt_from_img(sanitized_img)
+            lower_text = text.lower()
+            no_spaces = lower_text.replace(' ', '')
+            if no_spaces.find("gameover"):
+                add_score(playerid)
+                break
 
-    video_caplture.release()
+    video_capture.release()
     cv2.destroyAllWindows()
 
+# ToDo retrieve images from SLACK
+def score_from_slack_img(img_link: str):
+
+    slack_bot_token = environ.get('SLACK_BOT_TOKEN')
+    url = img_link
+    req = Request(url)
+    req.add_header('Authorization', f'Bearer {slack_bot_token}')
+    content = urlopen(req).read()
+    f = open('/home/felipe/Downloads/pinbolo.jpg', 'wb')
+    f.write(content)
+    f.close()
 
 
 def main():
-
-    sanitized_img = sanitize_img('/home/felipe/Downloads/PinbloAdjusted.jpg')
-    print(read_txt_from_img(sanitized_img))
+    score_from_slack_img()
 
 
 if __name__ == '__main__':

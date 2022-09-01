@@ -1,12 +1,13 @@
-import face_recognition
-import urllib.request
+from urllib.request import Request, urlopen
+from os import environ
 
 
-img = face_recognition.load_image_file("/home/felipe/Downloads/Fort.jpg")
-face_location = face_recognition.face_locations(img)
-img_encoding = face_recognition.face_encodings(img, face_location)[0]
-known_img = face_recognition.load_image_file("/home/felipe/Downloads/download.jpeg")
-known_img_enc = face_recognition.face_encodings(known_img)[0]
+slack_bot_token = environ.get('SLACK_BOT_TOKEN')
+url = "https://files.slack.com/files-pri/T03TU752Z1V-F040BMU8Q9Z/pinblo.jpg"
+req = Request(url)
+req.add_header('Authorization', f'Bearer {slack_bot_token}')
+content = urlopen(req).read()
+f = open('/home/felipe/Downloads/pinbolo.jpg', 'wb')
+f.write(content)
+f.close()
 
-face_dist = face_recognition.face_distance([img_encoding], known_img_enc)
-print(float(face_dist[0]))
