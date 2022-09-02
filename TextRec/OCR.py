@@ -2,10 +2,30 @@ import numpy as np
 import cv2
 import pytesseract
 from time import time
-from DB.ScoreAppend import add_score
+from DB.Db import add_score
 from urllib.request import Request, urlopen
 from os import environ
-from slack_sdk import WebClient
+
+
+def slack_detect_new_img(img_link: list) -> bool:
+    """Recieve new list of links, compare with old, return text from new image if there is a new image"""
+    # Carga el estado anterior de los links para compararlos con los nuevos
+    # Si son iguales quiere decir que no se subieron imagenes.
+    old_img_links = np.load("/home/felipe/PinballProject/oldImgList.npy")
+    if old_img_links != img_link:
+        # Saca el token de la memoria
+        slack_bot_token = environ.get('SLACK_BOT_TOKEN')
+        # Hace un request al link de la imagen con autencticacion el el header
+        req = Request(img_link)
+        req.add_header('Authorization', f'Bearer {slack_bot_token}')
+        # Lee la respuesta y la guarda como una imagen
+        content = urlopen(req).read()
+        f = open('/home/felipe/PinballProject/SlackImages/score.jpg', 'wb')
+        f.write(content)
+        f.close()
+        return True
+    else:
+        return False
 
 
 def sanitize_img(img) -> np.ndarray:
@@ -13,6 +33,7 @@ def sanitize_img(img) -> np.ndarray:
     # Aplica grayscale y elimina los pixeles con brillos bajos
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_gray = cv2.threshold(img_gray, 175, 255, cv2.THRESH_TOZERO)[1]
+    # El kernel es una matriz para hacer las transformaciones con cv2
     kernel = np.ones((3, 3), np.uint8)
     # Si un pixel tiene mas que cierto valor, le agrega a los pixeles cercanos brillo
     # Sirve para llenar pequenios espacios vacios en la imagen
@@ -23,7 +44,7 @@ def sanitize_img(img) -> np.ndarray:
     img_gray = cv2.erode(img_gray, kernel, iterations=1)
     # Borronea la imagen para hacerla mas suave y que tesseract sea mas preciso
     img_gray = cv2.medianBlur(img_gray, 3)
-    cv2.imwrite('pingue.jpg', img_gray)
+    cv2.imwrite('sanitized.jpg', img_gray)
     return img_gray
 
 
@@ -39,41 +60,36 @@ def score_listening_mode(playerid: str) -> str:
     """Enter a listening state to wait for the score to show on the Pinball screen.
     Uploads the score to the given player id
     """
+    # Habilita la camara y determina los fps
     video_capture = cv2.VideoCapture(0)
-    frame_rate = 2
+    frame_rate = 1
     prev = 0
 
     while True:
+        # Lee la informacion de la camara constantemente para no llenar el buffer
+        # Pero ejecuta el OCR cada 1/fps segundos para ahorrar recursos
         time_elapsed = time() - prev
         ret, frame = video_capture.read()
 
         if time_elapsed > 1 / frame_rate:
+            # Limpia imagen y lee el texto
             sanitized_img = sanitize_img(frame)
             text = read_txt_from_img(sanitized_img)
+            # Trata de "limpiar" el texto para evitar errores de reconocimiento
             lower_text = text.lower()
             no_spaces = lower_text.replace(' ', '')
             if no_spaces.find("gameover"):
+                if slack_detect_new_img():
+
                 add_score(playerid)
                 break
 
     video_capture.release()
     cv2.destroyAllWindows()
 
-# ToDo retrieve images from SLACK
-def score_from_slack_img(img_link: str):
-
-    slack_bot_token = environ.get('SLACK_BOT_TOKEN')
-    url = img_link
-    req = Request(url)
-    req.add_header('Authorization', f'Bearer {slack_bot_token}')
-    content = urlopen(req).read()
-    f = open('/home/felipe/Downloads/pinbolo.jpg', 'wb')
-    f.write(content)
-    f.close()
-
 
 def main():
-    score_from_slack_img()
+    slack_detect_new_img()
 
 
 if __name__ == '__main__':

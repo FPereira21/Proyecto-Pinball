@@ -24,10 +24,10 @@ def encodings_creation(root_path: str):
         if locations:
             tmp_img_encoding = face_recognition.face_encodings(img, locations)[0]
             name_no_ext = os.path.splitext(image_name)[0]
-            if not os.path.exists(f"/home/felipe/FaceEncodings/{name_no_ext}"):
-                os.mkdir(f"/home/felipe/FaceEncodings/{name_no_ext}")
-            print(f"/home/felipe/FaceEncodings/{name_no_ext}")
-            numpy.save(f"/home/felipe/FaceEncodings/{name_no_ext}/encoding{name_no_ext}", tmp_img_encoding)
+            if not os.path.exists(f"/home/felipe/PinballProject/FaceEncodings/{name_no_ext}"):
+                os.mkdir(f"/home/felipe/PinballProject/FaceEncodings/{name_no_ext}")
+            print(f"/home/felipe/PinballProject/FaceEncodings/{name_no_ext}")
+            numpy.save(f"/home/felipe/PinballProject/FaceEncodings/{name_no_ext}/encoding{name_no_ext}", tmp_img_encoding)
         else:
             print(f"Error con {image_name}")
 
@@ -38,7 +38,7 @@ def encodings_upload():
     cur = conn.cursor()
     # SQL statement
     sql = "INSERT INTO Players (Player, EncodingPath) VALUES (?, ?)"
-    face_encodings_path = '/home/felipe/FaceEncodings'
+    face_encodings_path = '/home/felipe/PinballProject/FaceEncodings'
     players = []
     for root, dirs, files in os.walk(face_encodings_path):
         for encodings in files:
@@ -60,7 +60,7 @@ def encodings_upload():
 def main():
     root_path = input("Ingrese la ruta absoluta de la carpeta que contenga las fotos\n(Enter para default):")
     if root_path == "":
-        root_path = "/home/felipe/PinballFaces"
+        root_path = "/home/felipe/PinballProject/PinballFaces"
     encodings_creation(root_path)
     upload_confirm = input("¿Desea subir los nuevos encodings a la base de datos? [Y/N]")
     if upload_confirm.lower() == "y":

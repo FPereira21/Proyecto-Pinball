@@ -6,10 +6,7 @@ from DB.Db import mdbconn
 
 def send_to(channel: str, text):
     """Send message to a channel in slack."""
-    # ~~ANIMALADA~~
-    TEMP = "xoxb-3946243101063-3960962126851-kbN69OEFt4jFDgxMrU780O4l"
     slack_token = os.environ.get("SLACK_BOT_TOKEN")
-    slack_token = TEMP
     client = WebClient(token=slack_token)
     try:
         response = client.chat_postMessage(channel=f"{channel}", text=f"{text}")
@@ -42,10 +39,35 @@ def post_leaderboard():
     conn.close()
 
 
-def main():
-    TEMP = "xoxb-3946243101063-3960962126851-kbN69OEFt4jFDgxMrU780O4l"
+def get_img_links():
     slack_token = os.environ.get("SLACK_BOT_TOKEN")
-    slack_token = TEMP
+    client = WebClient(token=slack_token)
+
+    channel_name = 'general'
+    conversation_id = None
+    try:
+        for result in client.conversations_list():
+            if conversation_id is not None:
+                break
+            for channel in result["channels"]:
+                if channel["name"] == channel_name:
+                    conversation_id = channel["id"]
+                    print(f"Found conversation id: {conversation_id}")
+                    break
+    except SlackApiError as e:
+        print(f"Error: {e}")
+    try:
+        history = client.conversations_history(channel=conversation_id, limit=10)
+        conversation_history = history["messages"]
+
+        for element in conversation_history:
+            print(element.get("files")[0].get("url_private"))
+    except SlackApiError as e:
+        print(f"Error creating Conversation: {e}")
+
+
+def main():
+    get_img_links()
     # client = WebClient(token=slack_token)
     # try:
     #     response = client.chat_postMessage(channel="#random", text="Hello World!")
@@ -55,7 +77,7 @@ def main():
     #     assert e.response["error"]
     #     print(f"Got an error: {e.response['error']}")
     # send_to("random", "Holis")
-    post_leaderboard()
+
 
 
 if __name__ == '__main__':
