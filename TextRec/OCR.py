@@ -1,10 +1,11 @@
 import numpy as np
 import cv2
 import pytesseract
-from time import time
+from time import time, sleep
 from DB.Db import add_score
 from urllib.request import Request, urlopen
 from os import environ
+from rapidfuzz import fuzz
 
 
 def slack_detect_new_img(img_link: list) -> bool:
@@ -76,12 +77,12 @@ def score_listening_mode(playerid: str) -> str:
             sanitized_img = sanitize_img(frame)
             text = read_txt_from_img(sanitized_img)
             # Trata de "limpiar" el texto para evitar errores de reconocimiento
-            lower_text = text.lower()
-            no_spaces = lower_text.replace(' ', '')
-            if no_spaces.find("gameover"):
-                if slack_detect_new_img():
-
-                add_score(playerid)
+            if fuzz.partialratio(text, "Game Over") > 70:
+                for i in range(30):
+                    if slack_detect_new_img():
+                        add_score(playerid)
+                        break
+                    sleep(10)
                 break
 
     video_capture.release()

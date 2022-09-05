@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/home/felipe/Desktop/Lenguajes/Python/Sprint4 Dekstop/env/bin/python3.10" "$0" "$@"
+'''exec' "/home/felipe/Desktop/Python/Sprint4/env/bin/python3.10" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re
