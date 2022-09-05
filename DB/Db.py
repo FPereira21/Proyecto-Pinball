@@ -30,7 +30,6 @@ def add_score(playerid, points: int):
     cur.execute("SELECT PersonID, Score FROM Scoreboard LIMIT 5")
     for person_id, score in cur:
         if points > score:
-            print("WOWZAS")
             post_leaderboard()
             break
 
