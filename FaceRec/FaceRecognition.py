@@ -66,10 +66,12 @@ def main():
                 # Autentica la imagen con las referencias
                 current_image_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)[0]
                 match, player_id = face_authentication(current_image_encodings)
-                if match != "":
-                    score_listening_mode(player_id)
-                    print(match)
-                    print(player_id)
+                # if match != "":
+                #     print("Presione cualquier tecla para confirmar identidad y jugar")
+                #     if cv2.waitKey(10000) != -1:
+                #         score_listening_mode(player_id)
+                #         print(match)
+                #         print(player_id)
 
         for (top, right, bottom, left) in face_locations:
             top *= 4

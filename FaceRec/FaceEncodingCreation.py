@@ -39,14 +39,14 @@ def encodings_upload():
     # SQL statement
     sql = "INSERT INTO Players (Player, EncodingPath) VALUES (?, ?)"
     face_encodings_path = '/home/felipe/PinballProject/FaceEncodings'
-    players = []
+    player_encoding_path = []
     for root, dirs, files in os.walk(face_encodings_path):
         for encodings in files:
             full_path = f"{root}/{encodings}"
-            players.append(full_path)
-    print(players)
+            player_encoding_path.append(full_path)
+    print(player_encoding_path)
 
-    for path in players:
+    for path in player_encoding_path:
         # Separa el path segun las barras
         folder_parent_list = path.rsplit("/")
         # Busca la carpeta FaceEncodings y agarra la siguiente para sacar el nombre del jugador
