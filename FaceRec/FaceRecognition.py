@@ -64,8 +64,8 @@ def main():
             # Si detecta caras en la imagen, le aplica el reconocimiento
             if face_locations:
                 # Autentica la imagen con las referencias
-                image_encoding = face_recognition.face_encodings(rgb_small_frame, face_locations)[0]
-                match, player_id = face_authentication(image_encoding)
+                current_image_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)[0]
+                match, player_id = face_authentication(current_image_encodings)
                 if match != "":
                     score_listening_mode(player_id)
                     print(match)

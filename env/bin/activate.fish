@@ -30,7 +30,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/home/felipe/Desktop/Python/Sprint4/env"
+set -gx VIRTUAL_ENV "/home/felipe/Desktop/Lenguajes/Python/Sprint4 Dekstop/env"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

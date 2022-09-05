@@ -72,11 +72,11 @@ def post_leaderboard():
     conn.close()
 
 
-def get_img_links() -> list:
-    """Request conversations from Slack API, return only the image links."""
+def get_img_links(chan_name: str) -> list:
+    """Request all conversations from a select channel in Slack API, return only the image links."""
     slack_token = os.environ.get("SLACK_BOT_TOKEN")
     client = WebClient(token=slack_token)
-    channel_name = 'general'
+    channel_name = chan_name
     conversation_id = None
 
     image_links = []
