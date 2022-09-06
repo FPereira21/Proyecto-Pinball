@@ -1,8 +1,10 @@
 import sys
+from urllib.request import Request, urlopen
 import mariadb
 import os
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+import numpy as np
 
 
 def mdbconn():
@@ -102,6 +104,33 @@ def get_img_links(chan_name: str) -> list:
     except SlackApiError as e:
         print(f"Error creating Conversation: {e}")
     return image_links
+
+
+def slack_detect_new_img() -> bool:
+    """Recieve new list of links, compare with old, return text from new image if there is a new image"""
+    # Carga el estado anterior de los links para compararlos con los nuevos
+    # Si son iguales quiere decir que no se subieron imagenes.
+    try:
+        old_img_links = np.ndarray.tolist(np.load("/home/felipe/PinballProject/oldImgList.npy"))
+    except OSError as e:
+        print(e)
+        old_img_links = []
+    # Saca el token de la memoria
+    slack_bot_token = os.environ.get('SLACK_BOT_TOKEN')
+    new_img_links = get_img_links(chan_name="general")
+    if old_img_links != new_img_links:
+        np.save("/home/felipe/PinballProject/oldImgList.npy", new_img_links)
+        # Hace un request al link de la imagen con autencticacion el el header
+        req = Request(new_img_links[-1])
+        req.add_header('Authorization', f'Bearer {slack_bot_token}')
+        # Lee la respuesta y la guarda como una imagen
+        content = urlopen(req).read()
+        f = open('/home/felipe/PinballProject/SlackImages/score.jpg', 'wb')
+        f.write(content)
+        f.close()
+        return True
+    else:
+        return False
 
 
 def main():

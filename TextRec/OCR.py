@@ -2,37 +2,8 @@ import numpy as np
 import cv2
 import pytesseract
 from time import time, sleep
-from DB.Db import add_score, get_img_links
-from urllib.request import Request, urlopen
-from os import environ
+from DB.Db import add_score, get_img_links, slack_detect_new_img
 from rapidfuzz import fuzz
-
-
-def slack_detect_new_img() -> bool:
-    """Recieve new list of links, compare with old, return text from new image if there is a new image"""
-    # Carga el estado anterior de los links para compararlos con los nuevos
-    # Si son iguales quiere decir que no se subieron imagenes.
-    try:
-        old_img_links = np.ndarray.tolist(np.load("/home/felipe/PinballProject/oldImgList.npy"))
-    except OSError as e:
-        print(e)
-        old_img_links = []
-    # Saca el token de la memoria
-    slack_bot_token = environ.get('SLACK_BOT_TOKEN')
-    new_img_links = get_img_links(chan_name="general")
-    if old_img_links != new_img_links:
-        np.save("/home/felipe/PinballProject/oldImgList.npy", new_img_links)
-        # Hace un request al link de la imagen con autencticacion el el header
-        req = Request(new_img_links[-1])
-        req.add_header('Authorization', f'Bearer {slack_bot_token}')
-        # Lee la respuesta y la guarda como una imagen
-        content = urlopen(req).read()
-        f = open('/home/felipe/PinballProject/SlackImages/score.jpg', 'wb')
-        f.write(content)
-        f.close()
-        return True
-    else:
-        return False
 
 
 def sanitize_img(img) -> np.ndarray:

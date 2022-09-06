@@ -34,12 +34,10 @@ def face_authentication(img_enc) -> tuple:
         return "", -1
     else:
         # El indice de la distancia corresponde al indice de su path, con el cual se saca el nombre
-        print(encodings_path_list[best_match_index])
         match_path = encodings_path_list[best_match_index][1]
         split_path = match_path.rsplit("/")
         match_name_location = split_path.index("FaceEncodings") + 1
         match_name = split_path[match_name_location]
-        print(face_distances[best_match_index])
         # Retorna el nombre del match y su id
         return match_name, encodings_path_list[best_match_index][0]
 
@@ -54,10 +52,10 @@ def main():
         # Siempre lee la camara para no llenar el buffer
         time_elapsed = time.time() - prev
         ret, frame = video_capture.read()
-        # Si pasan 1/fps segundos busca las posiciones de las carask
+        # Si pasan 1/fps segundos busca las posiciones de las caras
         if time_elapsed > 1 / frame_rate:
             prev = time.time()
-            # Achica el tamanio de la imagen y la convierte de BGR a RGB porque cv2 es alto ladilla
+            # Achica el tamanio de la imagen y la convierte de BGR a RGB porque cv2 le dio la gana
             small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
             rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
             face_locations = face_recognition.face_locations(rgb_small_frame)
@@ -66,12 +64,14 @@ def main():
                 # Autentica la imagen con las referencias
                 current_image_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)[0]
                 match, player_id = face_authentication(current_image_encodings)
-                # if match != "":
-                #     print("Presione cualquier tecla para confirmar identidad y jugar")
-                #     if cv2.waitKey(10000) != -1:
-                #         score_listening_mode(player_id)
-                #         print(match)
-                #         print(player_id)
+                if match != "":
+                    print("Presione cualquier tecla para confirmar identidad y jugar\nEsc para salir")
+                    if cv2.waitKey(1) != -1:
+                        # score_listening_mode(player_id)
+                        print(match)
+                        print(player_id)
+                else:
+                    cv2.putText(frame, "Cara no reconocida", (0, 0), cv2.FONT_HERSHEY_DUPLEX, 1.0, (255, 255, 255), 1)
 
         for (top, right, bottom, left) in face_locations:
             top *= 4
