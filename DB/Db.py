@@ -6,6 +6,8 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 import numpy as np
 
+CHANNEL_NAME = "general"
+
 
 def mdbconn():
     """Establish connection to mariadb Pinball database, returns connection object."""
@@ -55,19 +57,22 @@ def post_leaderboard():
     """Post first 5 elements from leaderboard to slack as message."""
     conn = mdbconn()
     cur = conn.cursor()
+    text = ""
     entries = []
     cur.execute("SELECT Id, Player from Players ORDER BY Id ASC")
-    # Mas prolijo con diccionarion capaz
     player_id_list = [None]
+
     for Id, Player in cur:
         player_id_list.append(Player)
+
     cur.execute("SELECT * FROM Scoreboard ORDER BY Score DESC LIMIT 5")
+
     for PlayerId, Score, Date in cur:
-        # print(f"{PlayerId} :: {Score}")
-        entries.append(f"{player_id_list[PlayerId]} - {Score}")
-        text = ""
-    for e in entries:
-        text = text + e + "\n"
+        entries.append(f"{player_id_list[PlayerId]} - {Score} - {Date}")
+
+    for entry in entries:
+        text = text + entry + "\n"
+
     send_to("#random", text)
     print(text)
     conn.close()
@@ -117,20 +122,29 @@ def slack_detect_new_img() -> bool:
         old_img_links = []
     # Saca el token de la memoria
     slack_bot_token = os.environ.get('SLACK_BOT_TOKEN')
-    new_img_links = get_img_links(chan_name="general")
+    new_img_links = get_img_links(chan_name=CHANNEL_NAME)
     if old_img_links != new_img_links:
         np.save("/home/felipe/PinballProject/oldImgList.npy", new_img_links)
         # Hace un request al link de la imagen con autencticacion el el header
-        req = Request(new_img_links[-1])
+        if new_img_links:
+            req = Request(new_img_links[0])
         req.add_header('Authorization', f'Bearer {slack_bot_token}')
         # Lee la respuesta y la guarda como una imagen
         content = urlopen(req).read()
         f = open('/home/felipe/PinballProject/SlackImages/score.jpg', 'wb')
         f.write(content)
         f.close()
+        print('True')
         return True
     else:
+        print('False')
         return False
+
+
+def check_for_highscore() -> bool:
+    conn = mdbconn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM Scoreboard ORDER BY Score DESC LIMIT 5")
 
 
 def main():
@@ -152,7 +166,7 @@ def main():
     #     if loopcond.lower() == "q":
     #         exit_loop = False
     # conn.close()
-    get_img_links()
+    slack_detect_new_img()
 
 
 if __name__ == "__main__":

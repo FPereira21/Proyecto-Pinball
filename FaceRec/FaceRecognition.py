@@ -6,25 +6,11 @@ import time
 from TextRec.OCR import score_listening_mode
 
 
-def face_authentication(img_enc) -> tuple:
+def face_authentication(img_enc: np.ndarray, encodings_list: list, encodings_path_list: list) -> tuple:
     """Authenticate faces from the given image (ndarray) with the database and return name and distance
     of the authenticated person.
     Return None if no match found.
     """
-    # Abre la conexion con la base de datos
-    conn = mdbconn()
-    cur = conn.cursor()
-    sql_query = "SELECT Id, EncodingPath FROM Players"
-    cur.execute(sql_query)
-    # Lista de encodings del tipo nparray
-    encodings_list = []
-    # Lista de paths a los encodings para sacar el nombre
-    encodings_path_list = []
-    # Saca el EncodingPath de los Players de la base y carga los .npy en encoding_list
-    for player_id, encoding_path in cur:
-        encodings_path_list.append([player_id, encoding_path])
-        encoding = np.load(encoding_path)
-        encodings_list.append(encoding)
     # Selecciona el encoding con la minima distancia
     face_distances = face_recognition.face_distance(encodings_list, img_enc)
     best_match_index = np.argmin(face_distances)
@@ -48,6 +34,21 @@ def main():
     prev = 0
     frame_rate = 1
 
+    # Abre la conexion con la base de datos
+    conn = mdbconn()
+    cur = conn.cursor()
+    sql_query = "SELECT Id, EncodingPath FROM Players"
+    cur.execute(sql_query)
+    # Lista de encodings del tipo nparray
+    encodings_list = []
+    # Lista de paths a los encodings para sacar el nombre
+    encodings_path_list = []
+    # Saca el EncodingPath de los Players de la base y carga los .npy en encoding_list
+    for player_id, encoding_path in cur:
+        encodings_path_list.append([player_id, encoding_path])
+        encoding = np.load(encoding_path)
+        encodings_list.append(encoding)
+
     while True:
         # Siempre lee la camara para no llenar el buffer
         time_elapsed = time.time() - prev
@@ -55,21 +56,19 @@ def main():
         # Si pasan 1/fps segundos busca las posiciones de las caras
         if time_elapsed > 1 / frame_rate:
             prev = time.time()
-            # Achica el tamanio de la imagen y la convierte de BGR a RGB porque cv2 le dio la gana
+            # Achica el tamanio de la imagen y la convierte de BGR a RGB porque cv2 le dio la gana usar BGR
             small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
             rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
             face_locations = face_recognition.face_locations(rgb_small_frame)
             # Si detecta caras en la imagen, le aplica el reconocimiento
             if face_locations:
                 # Autentica la imagen con las referencias
-                current_image_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)[0]
-                match, player_id = face_authentication(current_image_encodings)
+                current_image_encoding = face_recognition.face_encodings(rgb_small_frame, face_locations)[0]
+                match, player_id = face_authentication(current_image_encoding, encodings_list, encodings_path_list)
                 if match != "":
-                    print("Presione cualquier tecla para confirmar identidad y jugar\nEsc para salir")
-                    if cv2.waitKey(1) != -1:
-                        # score_listening_mode(player_id)
-                        print(match)
-                        print(player_id)
+                    print("Mucha suerte, maquina!!!")
+                    score_listening_mode(player_id)
+
                 else:
                     cv2.putText(frame, "Cara no reconocida", (0, 0), cv2.FONT_HERSHEY_DUPLEX, 1.0, (255, 255, 255), 1)
 
@@ -92,4 +91,5 @@ def main():
 
 
 if __name__ == '__main__':
+
     main()
